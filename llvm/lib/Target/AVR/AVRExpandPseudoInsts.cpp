@@ -1262,6 +1262,38 @@ bool AVRExpandPseudo::expand<AVR::STDWPtrQRr>(Block &MBB, BlockIt MBBI) {
 }
 
 template <>
+bool AVRExpandPseudo::expand<AVR::STDSPQRr>(Block &MBB, BlockIt MBBI) {
+  MachineInstr &MI = *MBBI;
+  const MachineFunction &MF = *MBB.getParent();
+  const AVRSubtarget &STI = MF.getSubtarget<AVRSubtarget>();
+
+  assert(MI.getOperand(0).getReg() == AVR::SP && "Unexpected register");
+
+  MI.setDesc(TII->get(AVR::STDPtrQRr));
+  MI.getOperand(0).setReg(STI.getFrameLowering()->hasReservedCallFrame(MF)
+                              ? AVR::R29R28
+                              : AVR::R31R30);
+
+  return true;
+}
+
+template <>
+bool AVRExpandPseudo::expand<AVR::STDWSPQRr>(Block &MBB, BlockIt MBBI) {
+  MachineInstr &MI = *MBBI;
+  const MachineFunction &MF = *MBB.getParent();
+  const AVRSubtarget &STI = MF.getSubtarget<AVRSubtarget>();
+
+  assert(MI.getOperand(0).getReg() == AVR::SP && "Unexpected register");
+
+  MI.setDesc(TII->get(AVR::STDWPtrQRr));
+  MI.getOperand(0).setReg(STI.getFrameLowering()->hasReservedCallFrame(MF)
+                              ? AVR::R29R28
+                              : AVR::R31R30);
+
+  return true;
+}
+
+template <>
 bool AVRExpandPseudo::expand<AVR::INWRdA>(Block &MBB, BlockIt MBBI) {
   MachineInstr &MI = *MBBI;
   Register DstLoReg, DstHiReg;
@@ -2346,6 +2378,8 @@ bool AVRExpandPseudo::expandMI(Block &MBB, BlockIt MBBI) {
     EXPAND(AVR::STWPtrPiRr);
     EXPAND(AVR::STWPtrPdRr);
     EXPAND(AVR::STDWPtrQRr);
+    EXPAND(AVR::STDSPQRr);
+    EXPAND(AVR::STDWSPQRr);
     EXPAND(AVR::INWRdA);
     EXPAND(AVR::OUTWARr);
     EXPAND(AVR::PUSHWRr);
